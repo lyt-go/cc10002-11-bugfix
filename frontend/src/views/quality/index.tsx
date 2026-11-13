@@ -11,7 +11,9 @@ const columns = [
   "阈值下界",
   "阈值上界",
   "采样比例",
-  "阻断级别"
+  "阻断级别",
+  "当前清洗版本",
+  "准入清洗版本"
 ]
 const actions = [
   "提交规则评审",
@@ -73,10 +75,11 @@ export default function QualityView() {
     try {
       const response = await request(`${ENDPOINT}/${row.id}/actions`, {
         method: 'POST',
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ values: { action } }),
       })
-      if (!response.ok) {
-        throw new Error('质量校验动作未生效，请稍后重试')
+      const payload = await response.json()
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? '质量校验动作未生效，请稍后重试')
       }
       await reload()
     } catch (error) {

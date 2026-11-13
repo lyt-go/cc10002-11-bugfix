@@ -1,6 +1,7 @@
 """变更审计业务规则：状态流转、字段校验与筛选口径都收在这里。"""
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from app.store import store
@@ -10,6 +11,39 @@ REQUIRED_FIELDS = ["记录编号", "操作表名", "变更类型"]
 STATUS_ORDER = ["草稿", "已记录", "已复核"]
 ACTION_RULES = {"确认记录": "已记录", "提交复核": "已复核"}
 NEGATIVE_ACTIONS = []
+
+
+def record_change(
+    *,
+    table: str,
+    change_type: str,
+    before: str,
+    after: str,
+    reason: str,
+    operator: str = "系统",
+) -> dict[str, Any]:
+    """同步写一条变更记录：清洗规则与质量校验的版本准入都从这里留痕。
+
+    直接落库为「已记录」，不走草稿，保证拦截与换版发生的当下就有审计可查。
+    """
+    rows = store.rows(MODULE)
+    entry_id = max((int(row.get("id", 0)) for row in rows), default=0) + 1
+    entry = {
+        "id": entry_id,
+        "记录编号": f"AUDI-{entry_id:04d}",
+        "操作表名": table,
+        "变更类型": change_type,
+        "变更前值": before,
+        "变更后值": after,
+        "操作人": operator,
+        "操作时间": date.today().isoformat(),
+        "变更原因": reason,
+        "status": "已记录",
+        "pending": True,
+        "abnormal": False,
+    }
+    rows.append(entry)
+    return entry
 
 
 class AuditlogService:

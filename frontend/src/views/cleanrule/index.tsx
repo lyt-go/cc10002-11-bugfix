@@ -11,7 +11,8 @@ const columns = [
   "异常阈值",
   "输出字段",
   "规则版本",
-  "生效日期"
+  "生效日期",
+  "当前版本"
 ]
 const actions = [
   "提交规则评审",
@@ -73,10 +74,11 @@ export default function CleanruleView() {
     try {
       const response = await request(`${ENDPOINT}/${row.id}/actions`, {
         method: 'POST',
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ values: { action } }),
       })
-      if (!response.ok) {
-        throw new Error('清洗规则动作未生效，请稍后重试')
+      const payload = await response.json()
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? '清洗规则动作未生效，请稍后重试')
       }
       await reload()
     } catch (error) {

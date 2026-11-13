@@ -50,12 +50,10 @@ def create_entry(payload: EntryPayload) -> ActionResult:
 
 @router.post("/{entry_id}/actions", response_model=ActionResult)
 def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
-    """对单条质量规则执行提交规则评审、启用规则、废弃规则；不允许的动作会被拦下并说明原因。"""
+    """对单条质量规则执行提交规则评审、启用规则、废弃规则；门禁不通过时停在评审中并说明阻断原因。"""
     action = str(payload.values.get("action") or "").strip()
-    entry, message = service.run_action(entry_id, action)
-    if entry is None:
-        return ActionResult(ok=False, message=message)
-    return ActionResult(ok=True, message=message, entry=entry)
+    entry, message, ok = service.run_action(entry_id, action)
+    return ActionResult(ok=ok, message=message, entry=entry)
 
 
 @router.get("/export")
